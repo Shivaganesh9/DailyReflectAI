@@ -1,0 +1,86 @@
+App Purpose & Core Concept
+"Create a daily diary app that allows users to securely log their thoughts, moods, goals, and activities."
+
+"Ensure the diary supports both text and multimedia (images, voice notes)."
+
+🎨 UI/UX Design Prompts
+"Design a clean, modern, and minimalistic interface using Material Design 3 principles."
+
+"Include light and dark themes with user-selectable color palettes for personalization."
+
+"Create smooth, intuitive navigation with bottom navigation bar and swipe gestures."
+
+"Design an onboarding flow that explains app features in under 3 screens."
+
+"Use engaging animations for adding entries, checking off goals, or switching themes."
+
+🧩 Core Features Prompts
+"Allow users to create, edit, and delete diary entries with rich-text formatting support."
+
+"Add voice-to-text support for quick entry creation using device microphone."
+
+"Enable photo and video attachments to entries with basic gallery browsing."
+
+"Add calendar view to browse entries by date and detect journaling streaks."
+
+"Let users add moods with emojis and optional tags (e.g., ‘grateful’, ‘productive’)."
+
+"Integrate a daily notification reminder system that is user-configurable."
+
+"Enable search functionality with filters for keywords, tags, mood, or date."
+
+"Add fingerprint or biometric lock to protect app access and sensitive content."
+
+"Offer offline functionality with full sync when online (use Room + WorkManager)."
+
+🛠 Customization Prompts
+"Allow users to select fonts, text sizes, and line spacing for diary readability."
+
+"Support custom entry templates (e.g., gratitude log, habit tracker, dream journal)."
+
+"Include customizable themes and background textures for entry screens."
+
+"Provide mood-tracking visualizations like line graphs, pie charts, and heatmaps."
+
+☁️ Backup & Sync Prompts
+"Implement optional Google account login using Firebase Authentication."
+
+"Provide cloud sync using Firebase Firestore or local backup to Google Drive."
+
+"Allow users to export diary entries to PDF or TXT formats."
+
+🚀 Performance & Optimization Prompts
+"Optimize local storage with Room Database and handle large media efficiently."
+
+"Use Glide for image loading and caching to ensure smooth scrolling."
+
+"Ensure UI components load asynchronously using Coroutines and LiveData/Flow."
+
+"Apply Jetpack Compose for modern, declarative UI development."
+
+🧪 Testing & Bug-Free Code Prompts
+"Write unit tests for all core business logic (CRUD operations, date handling)."
+
+"Use Espresso for UI testing of entry creation, theme switching, and navigation."
+
+"Run LeakCanary to ensure memory leaks are not present in the app."
+
+"Test the app on multiple screen sizes and OS versions using Firebase Test Lab."
+
+"Implement crash reporting and analytics using Firebase Crashlytics."
+
+💼 Play Store Readiness Prompts
+"Generate feature graphics, screenshots, and preview video for Play Store listing."
+
+"Create a privacy policy and clearly explain permissions (storage, mic, etc.)."
+
+"Ensure compliance with Google Play Developer Policies, including data handling."
+
+"Bundle the app with App Bundle (.aab) format and enable Play Asset Delivery."
+
+"Set up in-app review prompt and request feedback after a few days of usage."
+
+🌍 Localization & Accessibility Prompts
+"Add support for multiple languages using Android’s localization framework."
+
+"Ensure content is screen-reader friendly and follows WCAG accessibility guidelines."
