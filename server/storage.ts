@@ -1,5 +1,5 @@
 import { 
-  users, entries, moodLogs, aiAnalytics, userPreferences,
+  users, entries, moodLogs, userPreferences,
   type User, type InsertUser, type Entry, type InsertEntry, 
   type MoodLog, type InsertMoodLog, type UserPreferences,
   type InsertUserPreferences, type DashboardStats, type SearchFilters
@@ -35,34 +35,28 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      createdAt: new Date(),
-      theme: "light"
-    };
-    this.users.set(id, user);
-
+    const [user] = await db.insert(users).values(insertUser).returning();
+    
     // Create default preferences
-    const defaultPrefs: UserPreferences = {
-      id: this.currentId++,
-      userId: id,
-      reminderTime: "20:00",
+    await db.insert(userPreferences).values({
+      userId: user.id,
+      reminderTime: null,
       reminderEnabled: true,
       fontSize: "medium",
       fontFamily: "Inter",
@@ -76,228 +70,213 @@ export class DatabaseStorage implements IStorage {
       backgroundTexture: "none",
       lineHeight: "relaxed",
       privacyMode: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.userPreferences.set(id, defaultPrefs);
+    });
 
     return user;
   }
 
   async getEntries(userId: number, limit = 50, offset = 0): Promise<Entry[]> {
-    const userEntries = Array.from(this.entries.values())
-      .filter(entry => entry.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(offset, offset + limit);
-    return userEntries;
+    return await db
+      .select()
+      .from(entries)
+      .where(eq(entries.userId, userId))
+      .orderBy(desc(entries.createdAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   async getEntry(id: number, userId: number): Promise<Entry | undefined> {
-    const entry = this.entries.get(id);
-    return entry && entry.userId === userId ? entry : undefined;
+    const [entry] = await db
+      .select()
+      .from(entries)
+      .where(and(eq(entries.id, id), eq(entries.userId, userId)));
+    return entry;
   }
 
   async createEntry(insertEntry: InsertEntry): Promise<Entry> {
-    const id = this.currentId++;
-    const now = new Date();
     const wordCount = insertEntry.content.split(/\s+/).length;
-    
-    const entry: Entry = {
-      ...insertEntry,
-      id,
-      wordCount,
-      aiInsights: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.entries.set(id, entry);
+    const [entry] = await db
+      .insert(entries)
+      .values({
+        ...insertEntry,
+        wordCount,
+        aiInsights: null,
+        attachments: insertEntry.attachments || null,
+        mood: insertEntry.mood || null,
+        moodEmoji: insertEntry.moodEmoji || null,
+        tags: insertEntry.tags || null,
+        isVoiceNote: insertEntry.isVoiceNote || null,
+      })
+      .returning();
     return entry;
   }
 
   async updateEntry(id: number, userId: number, updateData: Partial<Entry>): Promise<Entry | undefined> {
-    const entry = this.entries.get(id);
-    if (!entry || entry.userId !== userId) return undefined;
-
-    const updatedEntry: Entry = {
-      ...entry,
-      ...updateData,
-      id,
-      userId,
-      updatedAt: new Date(),
-    };
-
-    if (updateData.content) {
-      updatedEntry.wordCount = updateData.content.split(/\s+/).length;
-    }
-
-    this.entries.set(id, updatedEntry);
-    return updatedEntry;
+    const [entry] = await db
+      .update(entries)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(entries.id, id), eq(entries.userId, userId)))
+      .returning();
+    return entry;
   }
 
   async deleteEntry(id: number, userId: number): Promise<boolean> {
-    const entry = this.entries.get(id);
-    if (!entry || entry.userId !== userId) return false;
-    return this.entries.delete(id);
+    const result = await db
+      .delete(entries)
+      .where(and(eq(entries.id, id), eq(entries.userId, userId)));
+    return (result.rowCount || 0) > 0;
   }
 
   async searchEntries(userId: number, filters: SearchFilters): Promise<Entry[]> {
-    let userEntries = Array.from(this.entries.values())
-      .filter(entry => entry.userId === userId);
+    const conditions = [eq(entries.userId, userId)];
 
     if (filters.query) {
-      const query = filters.query.toLowerCase();
-      userEntries = userEntries.filter(entry => 
-        entry.title.toLowerCase().includes(query) ||
-        entry.content.toLowerCase().includes(query) ||
-        entry.tags.some(tag => tag.toLowerCase().includes(query))
+      conditions.push(
+        sql`(${entries.title} ILIKE ${`%${filters.query}%`} OR ${entries.content} ILIKE ${`%${filters.query}%`})`
       );
     }
 
     if (filters.mood && filters.mood.length > 0) {
-      userEntries = userEntries.filter(entry => 
-        entry.mood && filters.mood!.includes(entry.mood)
-      );
+      conditions.push(inArray(entries.mood, filters.mood));
     }
 
     if (filters.tags && filters.tags.length > 0) {
-      userEntries = userEntries.filter(entry =>
-        filters.tags!.some(tag => entry.tags.includes(tag))
+      conditions.push(
+        sql`${entries.tags} && ${filters.tags}`
       );
     }
 
     if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
-      userEntries = userEntries.filter(entry => 
-        new Date(entry.createdAt) >= fromDate
-      );
+      conditions.push(gte(entries.createdAt, new Date(filters.dateFrom)));
     }
 
     if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      userEntries = userEntries.filter(entry => 
-        new Date(entry.createdAt) <= toDate
-      );
+      conditions.push(lte(entries.createdAt, new Date(filters.dateTo)));
     }
 
-    return userEntries.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db
+      .select()
+      .from(entries)
+      .where(and(...conditions))
+      .orderBy(desc(entries.createdAt));
   }
 
   async getEntriesByDateRange(userId: number, startDate: Date, endDate: Date): Promise<Entry[]> {
-    return Array.from(this.entries.values())
-      .filter(entry => 
-        entry.userId === userId &&
-        new Date(entry.createdAt) >= startDate &&
-        new Date(entry.createdAt) <= endDate
+    return await db
+      .select()
+      .from(entries)
+      .where(
+        and(
+          eq(entries.userId, userId),
+          gte(entries.createdAt, startDate),
+          lte(entries.createdAt, endDate)
+        )
       )
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .orderBy(desc(entries.createdAt));
   }
 
   async getMoodLogs(userId: number, limit = 30): Promise<MoodLog[]> {
-    return Array.from(this.moodLogs.values())
-      .filter(log => log.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, limit);
+    return await db
+      .select()
+      .from(moodLogs)
+      .where(eq(moodLogs.userId, userId))
+      .orderBy(desc(moodLogs.createdAt))
+      .limit(limit);
   }
 
   async createMoodLog(insertMoodLog: InsertMoodLog): Promise<MoodLog> {
-    const id = this.currentId++;
-    const moodLog: MoodLog = {
-      ...insertMoodLog,
-      id,
-      createdAt: new Date(),
-    };
-    this.moodLogs.set(id, moodLog);
+    const [moodLog] = await db
+      .insert(moodLogs)
+      .values({
+        ...insertMoodLog,
+        tags: insertMoodLog.tags || null,
+        entryId: insertMoodLog.entryId || null,
+        notes: insertMoodLog.notes || null,
+      })
+      .returning();
     return moodLog;
   }
 
   async getMoodLogsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<MoodLog[]> {
-    return Array.from(this.moodLogs.values())
-      .filter(log => 
-        log.userId === userId &&
-        new Date(log.createdAt) >= startDate &&
-        new Date(log.createdAt) <= endDate
+    return await db
+      .select()
+      .from(moodLogs)
+      .where(
+        and(
+          eq(moodLogs.userId, userId),
+          gte(moodLogs.createdAt, startDate),
+          lte(moodLogs.createdAt, endDate)
+        )
       )
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .orderBy(desc(moodLogs.createdAt));
   }
 
   async getDashboardStats(userId: number): Promise<DashboardStats> {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-    
-    const userEntries = Array.from(this.entries.values())
-      .filter(entry => entry.userId === userId);
+    const [entryCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(entries)
+      .where(eq(entries.userId, userId));
 
-    const recentEntries = userEntries.filter(entry => 
-      new Date(entry.createdAt) >= thirtyDaysAgo
-    );
+    const [avgMood] = await db
+      .select({ avg: sql<number>`avg(${entries.mood})` })
+      .from(entries)
+      .where(and(eq(entries.userId, userId), sql`${entries.mood} IS NOT NULL`));
 
-    // Calculate streak
+    // Calculate streak (consecutive days with entries)
+    const recentEntries = await db
+      .select({ date: sql<string>`date(${entries.createdAt})` })
+      .from(entries)
+      .where(eq(entries.userId, userId))
+      .groupBy(sql`date(${entries.createdAt})`)
+      .orderBy(desc(sql`date(${entries.createdAt})`))
+      .limit(30);
+
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date().toISOString().split('T')[0];
+    let currentDate = new Date(today);
     
-    for (let i = 0; i < 365; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(today.getDate() - i);
+    for (const entry of recentEntries) {
+      const entryDate = entry.date;
+      const expectedDate = currentDate.toISOString().split('T')[0];
       
-      const hasEntry = userEntries.some(entry => {
-        const entryDate = new Date(entry.createdAt);
-        entryDate.setHours(0, 0, 0, 0);
-        return entryDate.getTime() === checkDate.getTime();
-      });
-      
-      if (hasEntry) {
+      if (entryDate === expectedDate) {
         streak++;
-      } else if (i > 0) { // Allow for today to not have an entry yet
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
         break;
       }
     }
 
-    // Calculate average mood
-    const moodsInPeriod = userEntries
-      .filter(entry => entry.mood && new Date(entry.createdAt) >= thirtyDaysAgo)
-      .map(entry => entry.mood!);
-    
-    const averageMood = moodsInPeriod.length > 0 
-      ? moodsInPeriod.reduce((sum, mood) => sum + mood, 0) / moodsInPeriod.length 
-      : 0;
-
-    // Calculate wellness score (based on consistency, mood, and activity)
-    const consistencyScore = Math.min(100, (recentEntries.length / 30) * 100);
-    const moodScore = (averageMood / 5) * 100;
-    const wellnessScore = Math.round((consistencyScore * 0.6) + (moodScore * 0.4));
-
     return {
       streak,
-      totalEntries: userEntries.length,
-      averageMood: Math.round(averageMood * 10) / 10,
-      wellnessScore,
+      totalEntries: entryCount.count,
+      averageMood: avgMood.avg || 0,
+      wellnessScore: Math.round((avgMood.avg || 0) * 20), // Convert 1-5 scale to 0-100
     };
   }
 
   async getUserPreferences(userId: number): Promise<UserPreferences | undefined> {
-    return this.userPreferences.get(userId);
+    const [prefs] = await db
+      .select()
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId));
+    return prefs;
   }
 
   async updateUserPreferences(userId: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
-    const existing = this.userPreferences.get(userId);
-    if (!existing) {
-      throw new Error("User preferences not found");
-    }
-
-    const updated: UserPreferences = {
-      ...existing,
-      ...preferences,
-      updatedAt: new Date(),
-    };
-
-    this.userPreferences.set(userId, updated);
+    const [updated] = await db
+      .update(userPreferences)
+      .set({
+        ...preferences,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPreferences.userId, userId))
+      .returning();
     return updated;
   }
 }
-
-import { DatabaseStorage } from "./database-storage";
 
 export const storage = new DatabaseStorage();
