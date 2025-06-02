@@ -80,6 +80,13 @@ export class MemStorage implements IStorage {
       autoSave: true,
       biometricEnabled: false,
       exportFormat: "pdf",
+      offlineMode: true,
+      syncEnabled: true,
+      encryption: true,
+      customTheme: "system",
+      backgroundTexture: "none",
+      lineHeight: "relaxed",
+      privacyMode: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

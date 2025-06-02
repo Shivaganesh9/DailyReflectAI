@@ -266,7 +266,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prompt = await generateWritingPrompt();
       res.json({ prompt });
     } catch (error) {
-      res.status(500).json({ message: "Failed to generate writing prompt" });
+      console.error("Failed to generate writing prompt:", error);
+      res.status(503).json({ 
+        message: "AI service temporarily unavailable. Please check your OpenAI API key and billing status.",
+        error: "insufficient_quota"
+      });
     }
   });
 

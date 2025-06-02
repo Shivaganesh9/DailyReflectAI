@@ -20,6 +20,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
   { name: "AI Insights", href: "/ai-insights", icon: Brain },
   { name: "Search", href: "/search", icon: Search },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {

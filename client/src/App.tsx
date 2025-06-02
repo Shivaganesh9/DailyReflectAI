@@ -11,6 +11,7 @@ import NewEntry from "@/pages/new-entry";
 import Calendar from "@/pages/calendar";
 import Analytics from "@/pages/analytics";
 import Search from "@/pages/search";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/calendar" component={Calendar} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/search" component={Search} />
+      <Route path="/settings" component={Settings} />
       <Route path="/ai-insights" component={Analytics} />
       <Route component={NotFound} />
     </Switch>

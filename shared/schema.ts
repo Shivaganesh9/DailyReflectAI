@@ -61,6 +61,13 @@ export const userPreferences = pgTable("user_preferences", {
   autoSave: boolean("auto_save").default(true),
   biometricEnabled: boolean("biometric_enabled").default(false),
   exportFormat: text("export_format").default("pdf"),
+  offlineMode: boolean("offline_mode").default(true),
+  syncEnabled: boolean("sync_enabled").default(true),
+  encryption: boolean("encryption").default(true),
+  customTheme: text("custom_theme").default("system"),
+  backgroundTexture: text("background_texture").default("none"),
+  lineHeight: text("line_height").default("relaxed"),
+  privacyMode: boolean("privacy_mode").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
