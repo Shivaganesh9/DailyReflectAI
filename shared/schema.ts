@@ -1,5 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 export const users = pgTable("users", {
@@ -71,6 +72,37 @@ export const userPreferences = pgTable("user_preferences", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many, one }) => ({
+  entries: many(entries),
+  moodLogs: many(moodLogs),
+  preferences: one(userPreferences, {
+    fields: [users.id],
+    references: [userPreferences.userId],
+  }),
+}));
+
+export const entriesRelations = relations(entries, ({ one }) => ({
+  user: one(users, {
+    fields: [entries.userId],
+    references: [users.id],
+  }),
+}));
+
+export const moodLogsRelations = relations(moodLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [moodLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userPreferences.userId],
+    references: [users.id],
+  }),
+}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({

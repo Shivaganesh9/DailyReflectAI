@@ -4,6 +4,8 @@ import {
   type MoodLog, type InsertMoodLog, type UserPreferences,
   type InsertUserPreferences, type DashboardStats, type SearchFilters
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, gte, lte, like, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -32,20 +34,7 @@ export interface IStorage {
   updateUserPreferences(userId: number, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private entries: Map<number, Entry>;
-  private moodLogs: Map<number, MoodLog>;
-  private userPreferences: Map<number, UserPreferences>;
-  private currentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.entries = new Map();
-    this.moodLogs = new Map();
-    this.userPreferences = new Map();
-    this.currentId = 1;
-  }
+export class DatabaseStorage implements IStorage {
 
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
@@ -309,4 +298,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from "./database-storage";
+
+export const storage = new DatabaseStorage();
