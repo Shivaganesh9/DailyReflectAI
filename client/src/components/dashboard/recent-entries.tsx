@@ -91,7 +91,7 @@ export function RecentEntries() {
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="mood-emoji text-2xl cursor-pointer">
-                  {getMoodEmoji(entry.mood)}
+                  {getMoodEmoji(entry.mood ?? undefined)}
                 </div>
                 <div>
                   <h4 className="font-semibold text-foreground">{entry.title}</h4>
@@ -119,9 +119,9 @@ export function RecentEntries() {
               {truncateContent(entry.content)}
             </p>
 
-            {entry.attachments && Array.isArray(entry.attachments) && entry.attachments.length > 0 && (
+            {(Array.isArray(entry.attachments) && entry.attachments.length > 0) && (
               <div className="flex items-center space-x-2 mb-4">
-                {entry.attachments.slice(0, 3).map((attachment: any, i: number) => (
+                {(entry.attachments as any[]).slice(0, 3).map((attachment: any, i: number) => (
                   <div key={i} className="w-16 h-10 bg-muted rounded-lg overflow-hidden">
                     {attachment.mimetype?.startsWith('image/') ? (
                       <img 
@@ -150,10 +150,10 @@ export function RecentEntries() {
                   <Clock className="w-3 h-3 mr-1" />
                   {Math.ceil((entry.wordCount || 0) / 200)} min read
                 </span>
-                {entry.attachments && Array.isArray(entry.attachments) && entry.attachments.length > 0 && (
+                {Array.isArray(entry.attachments) && entry.attachments.length > 0 && (
                   <span className="flex items-center">
                     <Image className="w-3 h-3 mr-1" />
-                    {entry.attachments.length} media
+                    {(entry.attachments as any[]).length} media
                   </span>
                 )}
                 {entry.isVoiceNote && (

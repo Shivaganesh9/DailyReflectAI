@@ -37,7 +37,11 @@ export class AudioRecorder {
 
       this.setupEventListeners();
     } catch (error) {
-      throw new Error(`Failed to initialize audio recorder: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to initialize audio recorder: ${error.message}`);
+      } else {
+        throw new Error('Failed to initialize audio recorder: Unknown error');
+      }
     }
   }
 
@@ -117,7 +121,7 @@ export class AudioRecorder {
   static async isSupported(): Promise<boolean> {
     return !!(
       navigator.mediaDevices &&
-      navigator.mediaDevices.getUserMedia &&
+      typeof navigator.mediaDevices.getUserMedia === 'function' &&
       window.MediaRecorder
     );
   }

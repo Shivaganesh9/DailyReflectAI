@@ -31,13 +31,23 @@ export function StatsCards() {
 
   if (!stats) return null;
 
-  const cards = [
+  type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | null | undefined;
+
+  const cards: Array<{
+    title: string;
+    value: string | number;
+    icon: React.ElementType;
+    badge: string;
+    badgeVariant: BadgeVariant;
+    iconBg: string;
+    iconColor: string;
+  }> = [
     {
       title: "Day Streak",
       value: stats.streak,
       icon: Flame,
       badge: `+${Math.min(3, stats.streak)} days`,
-      badgeVariant: "default" as const,
+      badgeVariant: "default",
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
     },
@@ -46,7 +56,7 @@ export function StatsCards() {
       value: stats.totalEntries,
       icon: Book,
       badge: "This month",
-      badgeVariant: "secondary" as const,
+      badgeVariant: "secondary",
       iconBg: "bg-accent/10",
       iconColor: "text-accent",
     },
@@ -55,7 +65,7 @@ export function StatsCards() {
       value: `${stats.averageMood}/5`,
       icon: Smile,
       badge: stats.averageMood >= 4 ? "Positive" : stats.averageMood >= 3 ? "Neutral" : "Needs attention",
-      badgeVariant: (stats.averageMood >= 4 ? "default" : stats.averageMood >= 3 ? "secondary" : "destructive") as const,
+      badgeVariant: stats.averageMood >= 4 ? "default" : stats.averageMood >= 3 ? "secondary" : "destructive",
       iconBg: "bg-warning/10",
       iconColor: "text-warning",
     },
@@ -64,7 +74,7 @@ export function StatsCards() {
       value: `${stats.wellnessScore}%`,
       icon: TrendingUp,
       badge: "AI Powered",
-      badgeVariant: "outline" as const,
+      badgeVariant: "outline",
       iconBg: "bg-success/10",
       iconColor: "text-success",
     },

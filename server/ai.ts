@@ -55,7 +55,11 @@ export async function analyzeSentiment(text: string): Promise<SentimentAnalysis>
     };
   } catch (error) {
     console.error("Failed to analyze sentiment:", error);
-    throw new Error("Failed to analyze sentiment: " + error.message);
+    let errorMessage = "Unknown error";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    throw new Error("Failed to analyze sentiment: " + errorMessage);
   }
 }
 
@@ -97,7 +101,11 @@ export async function generateInsights(text: string): Promise<AIInsights> {
     };
   } catch (error) {
     console.error("Failed to generate insights:", error);
-    throw new Error("Failed to generate insights: " + error.message);
+    let errorMessage = "Unknown error";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    throw new Error("Failed to generate insights: " + errorMessage);
   }
 }
 
@@ -142,7 +150,11 @@ export async function generateWeeklyInsights(entries: string[]): Promise<{
     };
   } catch (error) {
     console.error("Failed to generate weekly insights:", error);
-    throw new Error("Failed to generate weekly insights: " + error.message);
+    let errorMessage = "Unknown error";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    throw new Error("Failed to generate weekly insights: " + errorMessage);
   }
 }
 
